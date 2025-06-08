@@ -1,0 +1,60 @@
+# Nome do Workflow
+name: Deploy to GitHub Pages
+
+# Gatilho: Executa sempre que houver um push na branch 'main'
+on:
+  push:
+    branches:
+      - main
+
+# Permissões para que a Action possa fazer o deploy
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Define as tarefas (jobs) que serão executadas
+jobs:
+  # Tarefa de verificação
+  verify:
+    name: Verificar se o index.html existe
+    runs-on: ubuntu-latest # Ambiente de execução
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4 # Ação para baixar o código
+
+      - name: Verificar a existência do arquivo
+        run: |
+          if [ ! -f public/index.html ]; then
+            echo "Erro: O arquivo public/index.html não foi encontrado."
+            exit 1
+          fi
+          echo "Verificação concluída com sucesso!"
+
+  # Tarefa de deploy
+  deploy:
+    name: Publicar no GitHub Pages
+    needs: verify # Depende da tarefa 'verify' para ser executada
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Fazer upload dos artefatos
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Pasta que será publicada
+          path: './public'
+
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
